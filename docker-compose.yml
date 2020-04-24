@@ -9,23 +9,31 @@ services:
     environment:
       MONGO_USER: mongo
       MONGO_PASSWORD: secret
-      MONGO_DATABASE: travel-mongo.db
-  database:
-    image: postgres
-    volumes:
-      - ./tmp/database:/var/lib/postgresql/data
+      MONGO_DATABASE: my-travel-mongo.db
+  mysql:
+    image: mysql:8.0.19
+    command: --default-authentication-plugin=mysql_native_password
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
-      POSTGRES_DB: travel.db
-    ports:
-      - 55495:5432
-  nest:
-    build: .
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=my_travel_mysql
+      - MYSQL_USER=my_travel
+      - MYSQL_PASSWORD=secret
     volumes:
-      - .:/travel-app
+      - ./docker/mysql/init-scripts:/docker-entrypoint-initdb.d
+      - my_travel_mysql_data_container:/var/lib/mysql
     ports:
-      - 3000:3000
-#      - 9229:9229
-    depends_on:
-      - database
+      - 33069:3306
+  nest:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    volumes:
+      - .:/my-travel
+    ports:
+      - 3007:3000
+    links:
+      - mysql
+      - mongo
+
+volumes:
+  my_travel_mysql_data_container:
